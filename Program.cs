@@ -9,6 +9,7 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+
 builder.Services.AddControllers();
 builder.Services.AddDbContext<MottuContext>(opt =>
 {
@@ -67,6 +68,7 @@ app.MapControllers();
 
 if (app.Environment.IsDevelopment())
 {
+    app.MapOpenApi();
     app.UseSwaggerUI(opt => opt.SwaggerEndpoint("/openapi/v1.json", "backend v1"));
 }
 
