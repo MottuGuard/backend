@@ -2,7 +2,7 @@
 {
     public class UwbTag
     {
-        public int UwbTagId { get; set; }
+        public int Id { get; set; }
         public string Eui64 { get; set; }
         public TagStatus Status { get; set; } = TagStatus.Inativa;
         public int MotoId { get; set; }

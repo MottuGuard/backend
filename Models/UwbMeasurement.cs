@@ -2,7 +2,7 @@
 {
     public class UwbMeasurement
     {
-        public int UwbMeasurementId { get; set; }
+        public int Id { get; set; }
         public int UwbTagId { get; set; }
         public UwbTag UwbTag { get; set; }
         public int UwbAnchorId { get; set; }

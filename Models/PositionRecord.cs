@@ -2,7 +2,7 @@
 {
     public class PositionRecord
     {
-        public int PositionRecordId { get; set; }
+        public int Id { get; set; }
         public int MotoId { get; set; }
         public Moto Moto { get; set; }
 

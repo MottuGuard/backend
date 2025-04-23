@@ -47,7 +47,7 @@ namespace backend.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> PutMoto(int id, Moto moto)
         {
-            if (id != moto.MotoId)
+            if (id != moto.Id)
             {
                 return BadRequest();
             }
@@ -81,7 +81,7 @@ namespace backend.Controllers
             _context.Motos.Add(moto);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetMoto", new { id = moto.MotoId }, moto);
+            return CreatedAtAction("GetMoto", new { id = moto.Id }, moto);
         }
 
         // DELETE: api/Motos/5
@@ -102,7 +102,7 @@ namespace backend.Controllers
 
         private bool MotoExists(int id)
         {
-            return _context.Motos.Any(e => e.MotoId == id);
+            return _context.Motos.Any(e => e.Id == id);
         }
     }
 }

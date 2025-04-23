@@ -2,7 +2,7 @@
 {
     public class UwbAnchor
     {
-        public int UwbAnchorId { get; set; }
+        public int Id { get; set; }
         public string Name { get; set; }
         //metros, referencia local
         public double X { get; set; }

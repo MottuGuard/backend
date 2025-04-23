@@ -2,12 +2,11 @@
 {
     public class Moto
     {
-        public int MotoId { get; set; }
+        public int Id { get; set; }
         public string? Chassi { get; set; }
         public string? Placa { get; set; }
         public ModeloMoto Modelo { get; set; }
 
-        public int UwbTagId { get; set; }
         public UwbTag UwbTag { get; set; }
 
         public MotoStatus Status { get; set; } = MotoStatus.Disponivel;

@@ -235,14 +235,26 @@ namespace backend.Migrations
 
             modelBuilder.Entity("backend.Models.Moto", b =>
                 {
-                    b.Property<int>("MotoId")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("NUMBER(10)");
 
-                    OraclePropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MotoId"));
+                    OraclePropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Chassi")
                         .HasColumnType("NVARCHAR2(2000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TIMESTAMP(7)");
+
+                    b.Property<DateTime?>("LastSeenAt")
+                        .HasColumnType("TIMESTAMP(7)");
+
+                    b.Property<double?>("LastX")
+                        .HasColumnType("BINARY_DOUBLE");
+
+                    b.Property<double?>("LastY")
+                        .HasColumnType("BINARY_DOUBLE");
 
                     b.Property<int>("Modelo")
                         .HasColumnType("NUMBER(10)");
@@ -250,18 +262,24 @@ namespace backend.Migrations
                     b.Property<string>("Placa")
                         .HasColumnType("NVARCHAR2(2000)");
 
-                    b.HasKey("MotoId");
+                    b.Property<int>("Status")
+                        .HasColumnType("NUMBER(10)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TIMESTAMP(7)");
+
+                    b.HasKey("Id");
 
                     b.ToTable("Motos");
                 });
 
             modelBuilder.Entity("backend.Models.PositionRecord", b =>
                 {
-                    b.Property<int>("PositionRecordId")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("NUMBER(10)");
 
-                    OraclePropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PositionRecordId"));
+                    OraclePropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<int>("MotoId")
                         .HasColumnType("NUMBER(10)");
@@ -275,7 +293,7 @@ namespace backend.Migrations
                     b.Property<double>("Y")
                         .HasColumnType("BINARY_DOUBLE");
 
-                    b.HasKey("PositionRecordId");
+                    b.HasKey("Id");
 
                     b.HasIndex("MotoId");
 
@@ -284,11 +302,11 @@ namespace backend.Migrations
 
             modelBuilder.Entity("backend.Models.UwbAnchor", b =>
                 {
-                    b.Property<int>("UwbAnchorId")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("NUMBER(10)");
 
-                    OraclePropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("UwbAnchorId"));
+                    OraclePropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -303,21 +321,24 @@ namespace backend.Migrations
                     b.Property<double>("Z")
                         .HasColumnType("BINARY_DOUBLE");
 
-                    b.HasKey("UwbAnchorId");
+                    b.HasKey("Id");
 
                     b.ToTable("UwbAnchors");
                 });
 
             modelBuilder.Entity("backend.Models.UwbMeasurement", b =>
                 {
-                    b.Property<int>("UwbMeasurementId")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("NUMBER(10)");
 
-                    OraclePropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("UwbMeasurementId"));
+                    OraclePropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<double>("Distance")
                         .HasColumnType("BINARY_DOUBLE");
+
+                    b.Property<int?>("MotoId")
+                        .HasColumnType("NUMBER(10)");
 
                     b.Property<double>("Rssi")
                         .HasColumnType("BINARY_DOUBLE");
@@ -331,7 +352,9 @@ namespace backend.Migrations
                     b.Property<int>("UwbTagId")
                         .HasColumnType("NUMBER(10)");
 
-                    b.HasKey("UwbMeasurementId");
+                    b.HasKey("Id");
+
+                    b.HasIndex("MotoId");
 
                     b.HasIndex("UwbAnchorId");
 
@@ -342,11 +365,11 @@ namespace backend.Migrations
 
             modelBuilder.Entity("backend.Models.UwbTag", b =>
                 {
-                    b.Property<int>("UwbTagId")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("NUMBER(10)");
 
-                    OraclePropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("UwbTagId"));
+                    OraclePropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Eui64")
                         .IsRequired()
@@ -358,9 +381,10 @@ namespace backend.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("NUMBER(10)");
 
-                    b.HasKey("UwbTagId");
+                    b.HasKey("Id");
 
-                    b.HasIndex("MotoId");
+                    b.HasIndex("MotoId")
+                        .IsUnique();
 
                     b.ToTable("UwbTags");
                 });
@@ -419,7 +443,7 @@ namespace backend.Migrations
             modelBuilder.Entity("backend.Models.PositionRecord", b =>
                 {
                     b.HasOne("backend.Models.Moto", "Moto")
-                        .WithMany()
+                        .WithMany("PositionHistory")
                         .HasForeignKey("MotoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -429,6 +453,10 @@ namespace backend.Migrations
 
             modelBuilder.Entity("backend.Models.UwbMeasurement", b =>
                 {
+                    b.HasOne("backend.Models.Moto", null)
+                        .WithMany("Measurements")
+                        .HasForeignKey("MotoId");
+
                     b.HasOne("backend.Models.UwbAnchor", "UwbAnchor")
                         .WithMany()
                         .HasForeignKey("UwbAnchorId")
@@ -449,12 +477,22 @@ namespace backend.Migrations
             modelBuilder.Entity("backend.Models.UwbTag", b =>
                 {
                     b.HasOne("backend.Models.Moto", "Moto")
-                        .WithMany()
-                        .HasForeignKey("MotoId")
+                        .WithOne("UwbTag")
+                        .HasForeignKey("backend.Models.UwbTag", "MotoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Moto");
+                });
+
+            modelBuilder.Entity("backend.Models.Moto", b =>
+                {
+                    b.Navigation("Measurements");
+
+                    b.Navigation("PositionHistory");
+
+                    b.Navigation("UwbTag")
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }
