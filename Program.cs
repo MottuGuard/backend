@@ -9,11 +9,7 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
 builder.Services.AddDbContext<MottuContext>(opt =>
 {
     opt.UseOracle(builder.Configuration.GetConnectionString("DefaultConnection"));
@@ -48,7 +44,6 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -72,7 +67,6 @@ app.MapControllers();
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
     app.UseSwaggerUI(opt => opt.SwaggerEndpoint("/openapi/v1.json", "backend v1"));
 }
 
