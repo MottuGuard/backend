@@ -49,11 +49,6 @@ builder.Services.AddOpenApi();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-    app.UseSwaggerUI(opt => opt.SwaggerEndpoint("/openapi/v1.json", "backend v1"));
-}
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -72,6 +67,13 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
+
 app.MapControllers();
+
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+    app.UseSwaggerUI(opt => opt.SwaggerEndpoint("/openapi/v1.json", "backend v1"));
+}
 
 app.Run();
