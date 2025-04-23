@@ -43,7 +43,7 @@ namespace backend.Services
             var token = await _tokenService.GenerateToken(user);
             var refreshToken = _tokenService.GenerateRefreshToken();
             user.RefreshToken = refreshToken;
-            user.RefreshTokenExpiryTime = DateTime.UtcNow.AddMinutes(1);
+            user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(1);
 
             return new OkObjectResult(new
             {
@@ -89,7 +89,7 @@ namespace backend.Services
             var newToken = await _tokenService.GenerateToken(user);
             var newRefreshToken = _tokenService.GenerateRefreshToken();
             user.RefreshToken = newRefreshToken;
-            user.RefreshTokenExpiryTime = DateTime.UtcNow.AddMinutes(1);
+            user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(1);
             await _userManager.UpdateAsync(user);
 
 
