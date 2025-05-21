@@ -23,14 +23,24 @@ namespace backend.Controllers
             _context = context;
         }
 
-        // GET: api/Motos
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Moto>>> GetMotos()
+        public async Task<ActionResult<IEnumerable<Moto>>> GetMotos(
+        [FromQuery] MotoStatus? status,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20)
         {
-            return await _context.Motos.ToListAsync();
+            var query = _context.Motos.AsQueryable();
+            if (status.HasValue)
+                query = query.Where(m => m.Status == status.Value);
+
+            var paged = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return Ok(paged);
         }
 
-        // GET: api/Motos/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Moto>> GetMoto(int id)
         {
@@ -44,8 +54,6 @@ namespace backend.Controllers
             return moto;
         }
 
-        // PUT: api/Motos/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
         public async Task<IActionResult> PutMoto(int id, Moto moto)
         {
@@ -75,8 +83,6 @@ namespace backend.Controllers
             return NoContent();
         }
 
-        // POST: api/Motos
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
         public async Task<ActionResult<Moto>> PostMoto(Moto moto)
         {
@@ -86,7 +92,6 @@ namespace backend.Controllers
             return CreatedAtAction("GetMoto", new { id = moto.Id }, moto);
         }
 
-        // DELETE: api/Motos/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteMoto(int id)
         {

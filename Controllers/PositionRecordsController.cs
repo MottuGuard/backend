@@ -22,9 +22,29 @@ namespace backend.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<PositionRecord>>> GetPositionRecords()
+        public async Task<ActionResult<IEnumerable<PositionRecord>>> GetRecords(
+            [FromQuery] int? motoId,
+            [FromQuery] DateTime? from,
+            [FromQuery] DateTime? to,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 50)
         {
-            return await _context.PositionRecords.ToListAsync();
+            var query = _context.PositionRecords.AsQueryable();
+
+            if (motoId.HasValue)
+                query = query.Where(r => r.MotoId == motoId.Value);
+            if (from.HasValue)
+                query = query.Where(r => r.Timestamp >= from.Value);
+            if (to.HasValue)
+                query = query.Where(r => r.Timestamp <= to.Value);
+
+            var list = await query
+                .OrderBy(r => r.Timestamp)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return Ok(list);
         }
 
         [HttpGet("{id}")]

@@ -22,9 +22,22 @@ namespace backend.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<UwbAnchor>>> GetUwbAnchors()
+        public async Task<ActionResult<IEnumerable<UwbAnchor>>> GetAnchors(
+            [FromQuery] string? nameContains,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10)
         {
-            return await _context.UwbAnchors.ToListAsync();
+            var query = _context.UwbAnchors.AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(nameContains))
+                query = query.Where(a => a.Name.Contains(nameContains));
+
+            var anchors = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return Ok(anchors);
         }
 
         [HttpGet("{id}")]

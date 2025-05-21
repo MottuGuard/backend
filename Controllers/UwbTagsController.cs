@@ -22,21 +22,16 @@ namespace backend.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<UwbTag>>> GetUwbTags()
+        public async Task<ActionResult<IEnumerable<UwbTag>>> GetTags(
+            [FromQuery] TagStatus? status)
         {
-            return await _context.UwbTags.ToListAsync();
-        }
-        [HttpGet("{id}")]
-        public async Task<ActionResult<UwbTag>> GetUwbTag(int id)
-        {
-            var uwbTag = await _context.UwbTags.FindAsync(id);
+            var query = _context.UwbTags.AsQueryable();
 
-            if (uwbTag == null)
-            {
-                return NotFound();
-            }
+            if (status.HasValue)
+                query = query.Where(t => t.Status == status.Value);
 
-            return uwbTag;
+            var tags = await query.ToListAsync();
+            return Ok(tags);
         }
 
         [HttpPut("{id}")]

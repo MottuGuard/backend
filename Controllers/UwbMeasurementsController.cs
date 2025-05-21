@@ -22,9 +22,32 @@ namespace backend.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<UwbMeasurement>>> GetUwbMeasurements()
+        public async Task<ActionResult<IEnumerable<UwbMeasurement>>> GetMeasurements(
+            [FromQuery] int? tagId,
+            [FromQuery] int? anchorId,
+            [FromQuery] DateTime? from,
+            [FromQuery] DateTime? to,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 50)
         {
-            return await _context.UwbMeasurements.ToListAsync();
+            var query = _context.UwbMeasurements.AsQueryable();
+
+            if (tagId.HasValue)
+                query = query.Where(m => m.UwbTagId == tagId.Value);
+            if (anchorId.HasValue)
+                query = query.Where(m => m.UwbAnchorId == anchorId.Value);
+            if (from.HasValue)
+                query = query.Where(m => m.Timestamp >= from.Value);
+            if (to.HasValue)
+                query = query.Where(m => m.Timestamp <= to.Value);
+
+            var result = await query
+                .OrderBy(m => m.Timestamp)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return Ok(result);
         }
         [HttpGet("{id}")]
         public async Task<ActionResult<UwbMeasurement>> GetUwbMeasurement(int id)
