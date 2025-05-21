@@ -129,7 +129,7 @@ Funcionalidades principais:
 
 ```bash
 git clone https://github.com/MottuGuard/backend.git
-cd uwb-moto-tracker
+cd backend
 ```
 
 ### Configurar Conexão e JWT
