@@ -159,8 +159,22 @@ dotnet ef database update --context ApplicationDbContext
 ```bash
 dotnet run
 ```
-
 Acesse `https://localhost:7095/swagger/index.html` para a interface Swagger UI e testes de API.
+
+
+Docker
+
+Tambem Incluímos um Dockerfile para build e runtime:
+
+Build e Run com Docker
+
+# Build da imagem
+docker build -t seu-usuario/backend-mottu:latest .
+
+# Run do container
+docker run -d -p 5000:5000 --name backend-mottu-api seu-usuario/backend-mottu:latest
+
+A API ficará disponível em http://localhost:5000.
 
 ---
 
