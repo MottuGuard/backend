@@ -7,7 +7,7 @@
         public string? Placa { get; set; }
         public ModeloMoto Modelo { get; set; }
 
-        public UwbTag UwbTag { get; set; }
+        public UwbTag? UwbTag { get; set; }
 
         public MotoStatus Status { get; set; } = MotoStatus.Disponivel;
 
