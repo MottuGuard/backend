@@ -1,22 +1,21 @@
-# ===== Build stage =====
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
 COPY ["backend.csproj", "./"]
 RUN dotnet restore "./backend.csproj"
-
 COPY . .
-RUN dotnet publish "backend.csproj" -c Release -o /app/publish
+RUN dotnet publish "backend.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:9.0
 WORKDIR /app
+
+ENV ASPNETCORE_URLS=http://+:8080 \
+    DOTNET_ENVIRONMENT=Production \
+    Jwt__Key=uqW8EXYt+3WOsDntgbG5Jt68rNTMmKZwpawNRcMIkSY=
 
 COPY --from=build /app/publish .
 
-ENV Jwt__Key="6bDCacaAFiuqVRY7mA9aGzlAjBsXn9d6tqTtsqyiO/M="
-ENV ConnectionStrings__DefaultConnection="Data Source=oracle.fiap.com.br/orcl;User Id=rm555277;Password=160106;"
+USER app
 
-ENV ASPNETCORE_URLS=http://+:5000
-EXPOSE 5000
-
+EXPOSE 8080
 ENTRYPOINT ["dotnet", "backend.dll"]

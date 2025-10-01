@@ -11,9 +11,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 
 builder.Services.AddControllers();
-builder.Services.AddDbContext<MottuContext>(opt =>
+builder.Services.AddDbContextPool<MottuContext>(opt =>
 {
-    opt.UseOracle(builder.Configuration.GetConnectionString("DefaultConnection"));
+    opt.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
+       .EnableSensitiveDataLogging()
+       .EnableDetailedErrors();
 });
 builder.Services.AddIdentity<ApplicationUser, IdentityRole<int>>().AddEntityFrameworkStores<MottuContext>()
     .AddDefaultTokenProviders();
@@ -25,7 +27,7 @@ builder.Services.AddAuthentication(opt =>
     var jwtKey = builder.Configuration["Jwt:Key"];
     if (string.IsNullOrEmpty(jwtKey))
     {
-        throw new InvalidOperationException("A chave JWT não foi configurada corretamente.");
+        throw new InvalidOperationException("A chave JWT nï¿½o foi configurada corretamente.");
     }
     opt.TokenValidationParameters = new TokenValidationParameters{
         ValidateIssuer = false,
@@ -50,6 +52,8 @@ using (var scope = app.Services.CreateScope())
     var services = scope.ServiceProvider;
     try
     {
+        var db = services.GetRequiredService<MottuContext>();
+        db.Database.Migrate();
         await DbInitiliazer.SeedRolesAsync(services);
     }
     catch (Exception ex)
@@ -57,6 +61,7 @@ using (var scope = app.Services.CreateScope())
         Console.WriteLine($"Erro ao criar roles: {ex.Message}");
     }
 }
+
 
 app.UseHttpsRedirection();
 
