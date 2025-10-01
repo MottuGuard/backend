@@ -44,7 +44,7 @@ namespace backend.Services
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.UtcNow.AddSeconds(20),
+                Expires = DateTime.UtcNow.AddMinutes(30),
                 SigningCredentials = credentails
             };
             var tokenHandler = new JwtSecurityTokenHandler();
