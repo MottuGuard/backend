@@ -2,14 +2,15 @@
 
 ## Descrição do Projeto
 
-Sistema de localização de motos dentro de um pátio utilizando etiquetas UWB (Ultra Wideband). O backend é implementado em ASP.NET Core com:
+Sistema de localização de motos dentro de um pátio utilizando etiquetas UWB (Ultra Wideband).
+O backend é implementado em **ASP.NET Core** com:
 
 * API RESTful com Controllers
-* Autenticação via JWT (ASP.NET Core Identity)
-* Persistência em banco Oracle via Entity Framework Core e Migrations
-* Documentação OpenAPI (Swagger)
+* Autenticação via **JWT** (ASP.NET Core Identity)
+* Persistência em banco **PostgreSQL** via **Entity Framework Core** e **Migrations**
+* Documentação **OpenAPI (Swagger)**
 
-Funcionalidades principais:
+**Principais funcionalidades:**
 
 * Gerenciamento de motos (`Moto`)
 * Cadastro e status de tags UWB (`UwbTag`)
@@ -18,163 +19,132 @@ Funcionalidades principais:
 * Histórico de posições calculadas (`PositionRecord`)
 * Registro e login de usuários
 
-## Rotas da API
-
-### Auth
-
-* **POST** `/api/Auth/register`
-  Registra novo usuário. Recebe JSON `{ Username, Email, Name, Password }`.
-
-* **POST** `/api/Auth/login`
-  Autentica usuário. Recebe JSON `{ Username, Password }`. Retorna JWT e tempo de expiração.
-
-### Motos
-
-* **GET** `/api/Motos`
-  Filtra por `status`, `modelo`, paginação `page` e `pageSize`.
-
-* **GET** `/api/Motos/{id}`
-  Retorna moto por ID.
-
-* **POST** `/api/Motos`
-  Cria nova moto. Recebe JSON da entidade `Moto`.
-
-* **PUT** `/api/Motos/{id}`
-  Atualiza moto existente.
-
-* **DELETE** `/api/Motos/{id}`
-  Remove moto.
-
-### UwbAnchors
-
-* **GET** `/api/UwbAnchors`
-  Filtra por `nameContains`, página e tamanho de página.
-
-* **GET** `/api/UwbAnchors/{id}`
-  Retorna âncora por ID.
-
-* **POST** `/api/UwbAnchors`
-  Cria nova âncora.
-
-* **PUT** `/api/UwbAnchors/{id}`
-  Atualiza âncora.
-
-* **DELETE** `/api/UwbAnchors/{id}`
-  Remove âncora.
-
-### UwbTags
-
-* **GET** `/api/UwbTags`
-  Filtra por `status`.
-
-* **GET** `/api/UwbTags/{id}`
-  Retorna tag por ID.
-
-* **POST** `/api/UwbTags`
-  Cria nova tag.
-
-* **PUT** `/api/UwbTags/{id}`
-  Atualiza tag.
-
-* **DELETE** `/api/UwbTags/{id}`
-  Remove tag.
-
-### UwbMeasurements
-
-* **GET** `/api/UwbMeasurements`
-  Filtra por `tagId`, `anchorId`, intervalo `from` e `to`, página e tamanho de página.
-
-* **GET** `/api/UwbMeasurements/{id}`
-  Retorna medição por ID.
-
-* **POST** `/api/UwbMeasurements`
-  Registra nova medição.
-
-* **PUT** `/api/UwbMeasurements/{id}`
-  Atualiza medição.
-
-* **DELETE** `/api/UwbMeasurements/{id}`
-  Remove medição.
-
-### PositionRecords
-
-* **GET** `/api/PositionRecords`
-  Filtra por `motoId`, intervalo `from` e `to`, página e tamanho de página.
-
-* **GET** `/api/PositionRecords/{id}`
-  Retorna registro por ID.
-
-* **POST** `/api/PositionRecords`
-  Cria novo registro de posição.
-
-* **PUT** `/api/PositionRecords/{id}`
-  Atualiza registro de posição.
-
-* **DELETE** `/api/PositionRecords/{id}`
-  Remove registro de posição.
-
-## Instalação
-
-### Pré-requisitos
-
-* [.NET SDK 9](https://dotnet.microsoft.com/download)
-* Banco de dados Oracle acessível
-* Ferramenta `dotnet-ef` instalada globalmente:
-
-  ```bash
-  dotnet tool install --global dotnet-ef
-  ```
-
-### Clonar o Repositório
-
-```bash
-git clone https://github.com/MottuGuard/backend.git
-cd backend
-```
-
-### Configurar Conexão e JWT
-
-No arquivo `appsettings.json`, ajuste a seção abaixo:
-
-```json
-"ConnectionStrings": {
-  "DefaultConnection": "User Id=USER;Password=PASSWORD;Data Source=//HOST:PORT/SERVICE"
-},
-"Jwt": {
-  "Key": "SUA_CHAVE_SECRETA_LONGA",
-  "Issuer": "SeuProjeto",
-  "Audience": "SeuProjetoClient"
-}
-```
-
-### Criar e Aplicar Migrations
-
-```bash
-dotnet ef migrations add InitialCreate --context ApplicationDbContext
-dotnet ef database update --context ApplicationDbContext
-```
-
-### Executar a Aplicação
-
-```bash
-dotnet run
-```
-Acesse `https://localhost:7095/swagger/index.html` para a interface Swagger UI e testes de API.
-
-
-Docker
-
-Tambem Incluímos um Dockerfile para build e runtime:
-
-Build e Run com Docker
-
-# Build da imagem
-docker build -t seu-usuario/backend-mottu:latest .
-
-# Run do container
-docker run -d -p 5000:5000 --name backend-mottu-api seu-usuario/backend-mottu:latest
-
-A API ficará disponível em http://localhost:5000.
+> ⚙️ **Migrations automáticas**
+> No startup a aplicação executa `Database.Migrate()` com retry, aplicando migrations pendentes automaticamente (útil em containers/ACI quando o DB demora a subir).
 
 ---
 
+## Rotas da API (resumo)
+
+### Auth
+
+* **POST** `/api/Auth/register` — `{ Username, Email, Name, Password }`
+* **POST** `/api/Auth/login` — `{ Username, Password }` → retorna JWT
+
+### Motos
+
+* **GET** `/api/Motos` — filtros: `status`, `modelo`, `page`, `pageSize`
+* **GET** `/api/Motos/{id}`
+* **POST** `/api/Motos`
+* **PUT** `/api/Motos/{id}`
+* **DELETE** `/api/Motos/{id}`
+
+### UwbAnchors / UwbTags / UwbMeasurements / PositionRecords
+
+Mesma ideia: GET (com filtros), GET por id, POST, PUT, DELETE.
+
+---
+
+## Pré-requisitos
+
+* [.NET SDK 9](https://dotnet.microsoft.com/download)
+* **Docker** e **Docker Compose** (para rodar local)
+* **Azure CLI** (para deploy em ACR + ACI)
+* (Opcional) `jq` para scripts de teste
+
+---
+
+## local com Docker Compose
+
+
+**Subir local:**
+
+```bash
+docker compose up -d
+# API: http://localhost:8080
+```
+
+**Logs & testes:**
+
+```bash
+docker logs -f api-mottuguard
+docker exec -it db-mottuguard psql -U postgres -d aquarumprotector_db -c '\dt'
+```
+
+**Derrubar:**
+
+```bash
+docker compose down -v
+```
+
+---
+
+## Migrations (CLI – opcional)
+
+> Em dev, subindo via compose, as migrations já aplicam no startup.
+> Se quiser gerar/rodar manualmente:
+
+```bash
+dotnet tool install --global dotnet-ef
+dotnet ef migrations add Initial -c MottuContext -o Data/Migrations
+dotnet ef database update -c MottuContext
+```
+
+---
+
+## Build & Deploy na Azure (ACR + ACI)
+
+A entrega utiliza **Azure Container Registry (ACR)** para armazenar a imagem e **Azure Container Instance (ACI)** para executar a API. O **PostgreSQL** também roda em ACI (imagem oficial `postgres:17`).
+
+### Scripts
+
+```
+/scripts
+  build.sh   # build da imagem dentro do ACR (az acr build)
+  deploy.sh  # cria ACI do Postgres e ACI da API, injeta envs e aponta a connection string
+```
+---
+
+## Testes rápidos (cURL)
+
+```bash
+BASE=http://localhost:8080 # ou http://<FQDN>:8080 no ACI
+
+# Cadastro e login
+curl -s -X POST $BASE/api/Auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","email":"admin@test.com","name":"Admin","password":"Admin!234"}'
+
+TOKEN=$(curl -s -X POST $BASE/api/Auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"Admin!234"}' | jq -r .token)
+
+# Exemplo de POST em Motos
+curl -s -X POST $BASE/api/Motos \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"chassi":"CHS123","placa":"ABC1D23","modelo":"MottuSportESD","status":"Disponivel"}'
+```
+
+---
+
+## Docker (build/run manual)
+
+```bash
+# Build
+docker build -t mottuguard/backend:dev .
+
+# Run (exemplo com Postgres local)
+docker run -d --name api -p 8080:8080 \
+  -e ASPNETCORE_URLS="http://+:8080" \
+  -e Jwt__Key="uqW8EXYt+3WOsDntgbG5Jt68rNTMmKZwpawNRcMIkSY=" \
+  -e ConnectionStrings__DefaultConnection="Host=localhost;Port=5432;Database=mottu;Username=postgres;Password=SenhaMuitoForte1234!" \
+  mottuguard/backend:dev
+```
+
+## Limpeza
+
+* **Local**: `docker compose down -v`
+* **Azure** (rápido): `az group delete -n rg-challenge-mottu --yes`
+
+---
