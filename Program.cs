@@ -1,6 +1,7 @@
 using backend.Data;
 using backend.Models;
 using backend.Services;
+using backend.Hubs;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -9,7 +10,25 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
 
+    options.AddPolicy("SignalRPolicy", policy =>
+    {
+        policy.WithOrigins("http://localhost:3000")
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
+    });
+});
+
+builder.Services.AddSignalR();
 builder.Services.AddControllers();
 builder.Services.AddDbContextPool<MottuContext>(opt =>
 {
@@ -43,6 +62,7 @@ builder.Services.AddAuthentication(opt =>
 
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddHostedService<MqttConsumerService>();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
@@ -55,20 +75,24 @@ using (var scope = app.Services.CreateScope())
         var db = services.GetRequiredService<MottuContext>();
         db.Database.Migrate();
         await DbInitiliazer.SeedRolesAsync(services);
+        await DbInitiliazer.SeedAnchorsAsync(db);
+        await DbInitiliazer.SeedTestDataAsync(db);
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"Erro ao criar roles: {ex.Message}");
+        Console.WriteLine($"Erro ao inicializar banco de dados: {ex.Message}");
     }
 }
 
 
 app.UseHttpsRedirection();
 
+app.UseCors("SignalRPolicy");
+
 app.UseAuthentication();
 app.UseAuthorization();
 
-
+app.MapHub<MottuHub>("/mottuHub");
 app.MapControllers();
 
 if (app.Environment.IsDevelopment())
