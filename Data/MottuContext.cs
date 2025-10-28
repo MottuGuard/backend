@@ -16,5 +16,6 @@ namespace backend.Data
         public DbSet<UwbAnchor> UwbAnchors { get; set; }
         public DbSet<UwbMeasurement> UwbMeasurements { get; set; }
         public DbSet<PositionRecord> PositionRecords { get; set; }
+        public DbSet<Event> Events { get; set; }
     }
 }

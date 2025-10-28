@@ -21,7 +21,7 @@ builder.Services.AddCors(options =>
 
     options.AddPolicy("SignalRPolicy", policy =>
     {
-        policy.WithOrigins("http://localhost:3000")
+        policy.WithOrigins("http://localhost:3000", "http://localhost:8080", "http://localhost:5173")
               .AllowAnyMethod()
               .AllowAnyHeader()
               .AllowCredentials();
