@@ -4,16 +4,13 @@
 
 namespace backend.Migrations
 {
-    /// <inheritdoc />
     public partial class changesToReflectIot : Migration
     {
-        /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
 
         }
 
-        /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
 

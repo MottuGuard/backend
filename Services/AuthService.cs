@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using backend.DTO;
 using backend.Models;
+using backend.Models.ApiResponses;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -27,17 +28,19 @@ namespace backend.Services
             var user = await _userManager.FindByEmailAsync(authDTO.Email);
             if (user == null)
             {
-                return new BadRequestObjectResult(new
+                return new UnauthorizedObjectResult(new ErrorResponse
                 {
-                    Message = "Email não encontrado"
+                    Error = "AUTHENTICATION_FAILED",
+                    Message = "Invalid email or password"
                 });
             }
             var result = await _userManager.CheckPasswordAsync(user, authDTO.Password);
             if (!result)
             {
-                return new BadRequestObjectResult(new
+                return new UnauthorizedObjectResult(new ErrorResponse
                 {
-                    Message = "Senha Incorreta"
+                    Error = "AUTHENTICATION_FAILED",
+                    Message = "Invalid email or password"
                 });
             }
             var token = await _tokenService.GenerateToken(user);
@@ -64,26 +67,42 @@ namespace backend.Services
             {
                 principal = _tokenService.GetPrincipalFromToken(refreshDTO.Token);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return new BadRequestObjectResult(new { Message = "Access token inválido", Error = ex.Message });
+                return new UnauthorizedObjectResult(new ErrorResponse
+                {
+                    Error = "INVALID_TOKEN",
+                    Message = "Access token is invalid or expired"
+                });
             }
 
             var userIdClaim = principal.FindFirst(ClaimTypes.NameIdentifier);
             if (userIdClaim == null)
             {
-                return new BadRequestObjectResult(new { Message = "Token não contém o identificador do usuário." });
+                return new UnauthorizedObjectResult(new ErrorResponse
+                {
+                    Error = "INVALID_TOKEN",
+                    Message = "Token does not contain user identifier"
+                });
             }
 
             var user = await _userManager.FindByIdAsync(userIdClaim.Value);
             if (user == null)
             {
-                return new NotFoundObjectResult(new { Message = "Usuário não encontrado." });
+                return new NotFoundObjectResult(new ErrorResponse
+                {
+                    Error = "USER_NOT_FOUND",
+                    Message = "User not found"
+                });
             }
 
             if (user.RefreshToken != refreshDTO.RefreshToken || user.RefreshTokenExpiryTime <= DateTime.UtcNow)
             {
-                return new BadRequestObjectResult(new { Message = "Refresh token inválido ou expirado." });
+                return new UnauthorizedObjectResult(new ErrorResponse
+                {
+                    Error = "INVALID_REFRESH_TOKEN",
+                    Message = "Refresh token is invalid or expired"
+                });
             }
 
             var newToken = await _tokenService.GenerateToken(user);
@@ -116,16 +135,24 @@ namespace backend.Services
             var result = await _userManager.CreateAsync(user, dto.Password);
             if (!result.Succeeded)
             {
-                return new BadRequestObjectResult(new
+                return new BadRequestObjectResult(new ErrorResponse
                 {
-                    Message = "Erro ao criar usuário",
-                    Errors = result.Errors.Select(e => e.Description)
+                    Error = "REGISTRATION_FAILED",
+                    Message = "Failed to create user",
+                    Errors = new Dictionary<string, string[]>
+                    {
+                        { "user", result.Errors.Select(e => e.Description).ToArray() }
+                    }
                 });
             }
             await _userManager.AddToRoleAsync(user, "User");
-            return new OkObjectResult(new
+
+            return new CreatedResult($"/api/users/{user.Id}", new
             {
-                Message = "Usuário criado com sucesso"
+                id = user.Id,
+                name = user.Name,
+                email = user.Email,
+                message = "User created successfully"
             });
         }
     }

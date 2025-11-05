@@ -15,7 +15,6 @@ namespace backend.Migrations
     [Migration("20251001174039_InitialMigrationAfterChangingToPostgre")]
     partial class InitialMigrationAfterChangingToPostgre
     {
-        /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618

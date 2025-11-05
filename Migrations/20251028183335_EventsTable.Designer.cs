@@ -15,7 +15,6 @@ namespace backend.Migrations
     [Migration("20251028183335_EventsTable")]
     partial class EventsTable
     {
-        /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618

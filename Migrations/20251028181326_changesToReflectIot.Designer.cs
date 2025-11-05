@@ -15,7 +15,6 @@ namespace backend.Migrations
     [Migration("20251028181326_changesToReflectIot")]
     partial class changesToReflectIot
     {
-        /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618

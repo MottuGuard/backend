@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -7,11 +7,16 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using backend.Data;
 using backend.Models;
+using backend.Models.ApiResponses;
+using backend.DTOs.UwbAnchor;
+using Microsoft.AspNetCore.Authorization;
 
 namespace backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
+    [Produces("application/json")]
     public class UwbAnchorsController : ControllerBase
     {
         private readonly MottuContext _context;
@@ -22,93 +27,176 @@ namespace backend.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<UwbAnchor>>> GetAnchors(
-            [FromQuery] string? nameContains,
+        [ProducesResponseType(typeof(PagedResponse<UwbAnchorResponseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<ActionResult<PagedResponse<UwbAnchorResponseDto>>> GetAnchors(
             [FromQuery] int page = 1,
-            [FromQuery] int pageSize = 10)
+            [FromQuery] int pageSize = 20)
         {
-            var query = _context.UwbAnchors.AsQueryable();
+            if (page < 1)
+                return BadRequest(new ErrorResponse
+                {
+                    Error = "INVALID_PAGE",
+                    Message = "Page must be greater than 0",
+                    TraceId = HttpContext.TraceIdentifier
+                });
 
-            if (!string.IsNullOrWhiteSpace(nameContains))
-                query = query.Where(a => a.Name.Contains(nameContains));
+            if (pageSize < 1 || pageSize > 100)
+                return BadRequest(new ErrorResponse
+                {
+                    Error = "INVALID_PAGE_SIZE",
+                    Message = "PageSize must be between 1 and 100",
+                    TraceId = HttpContext.TraceIdentifier
+                });
 
-            var anchors = await query
+            var totalCount = await _context.UwbAnchors.CountAsync();
+
+            var anchors = await _context.UwbAnchors
+                .OrderBy(a => a.Id)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
 
-            return Ok(anchors);
+            var response = new PagedResponse<UwbAnchorResponseDto>
+            {
+                Data = anchors.Select(a => new UwbAnchorResponseDto
+                {
+                    Id = a.Id,
+                    Name = a.Name,
+                    X = a.X,
+                    Y = a.Y,
+                    Z = a.Z
+                }),
+                Pagination = new PaginationMetadata
+                {
+                    Page = page,
+                    PageSize = pageSize,
+                    TotalCount = totalCount,
+                    TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
+                    HasNextPage = page * pageSize < totalCount,
+                    HasPreviousPage = page > 1
+                }
+            };
+
+            return Ok(response);
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<UwbAnchor>> GetUwbAnchor(int id)
+        [ProducesResponseType(typeof(UwbAnchorResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<UwbAnchorResponseDto>> GetUwbAnchor(int id)
         {
-            var uwbAnchor = await _context.UwbAnchors.FindAsync(id);
+            var anchor = await _context.UwbAnchors.FindAsync(id);
 
-            if (uwbAnchor == null)
+            if (anchor == null)
             {
-                return NotFound();
+                return NotFound(new ErrorResponse
+                {
+                    Error = "NOT_FOUND",
+                    Message = $"UWB anchor with ID {id} not found",
+                    TraceId = HttpContext.TraceIdentifier
+                });
             }
 
-            return uwbAnchor;
+            var response = new UwbAnchorResponseDto
+            {
+                Id = anchor.Id,
+                Name = anchor.Name,
+                X = anchor.X,
+                Y = anchor.Y,
+                Z = anchor.Z
+            };
+
+            return Ok(response);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutUwbAnchor(int id, UwbAnchor uwbAnchor)
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> PutUwbAnchor(int id, [FromBody] UpdateUwbAnchorDto dto)
         {
-            if (id != uwbAnchor.Id)
+            var anchor = await _context.UwbAnchors.FindAsync(id);
+            if (anchor == null)
             {
-                return BadRequest();
+                return NotFound(new ErrorResponse
+                {
+                    Error = "NOT_FOUND",
+                    Message = $"UWB anchor with ID {id} not found",
+                    TraceId = HttpContext.TraceIdentifier
+                });
             }
 
-            _context.Entry(uwbAnchor).State = EntityState.Modified;
+            if (dto.Name != null)
+                anchor.Name = dto.Name;
 
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!UwbAnchorExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
+            if (dto.X.HasValue)
+                anchor.X = dto.X.Value;
+
+            if (dto.Y.HasValue)
+                anchor.Y = dto.Y.Value;
+
+            if (dto.Z.HasValue)
+                anchor.Z = dto.Z.Value;
+
+            await _context.SaveChangesAsync();
 
             return NoContent();
         }
 
         [HttpPost]
-        public async Task<ActionResult<UwbAnchor>> PostUwbAnchor(UwbAnchor uwbAnchor)
+        [ProducesResponseType(typeof(UwbAnchorResponseDto), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<ActionResult<UwbAnchorResponseDto>> PostUwbAnchor([FromBody] CreateUwbAnchorDto dto)
         {
-            _context.UwbAnchors.Add(uwbAnchor);
+            var anchor = new UwbAnchor
+            {
+                Name = dto.Name,
+                X = dto.X,
+                Y = dto.Y,
+                Z = dto.Z
+            };
+
+            _context.UwbAnchors.Add(anchor);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetUwbAnchor", new { id = uwbAnchor.Id }, uwbAnchor);
+            var response = new UwbAnchorResponseDto
+            {
+                Id = anchor.Id,
+                Name = anchor.Name,
+                X = anchor.X,
+                Y = anchor.Y,
+                Z = anchor.Z
+            };
+
+            return CreatedAtAction(nameof(GetUwbAnchor), new { id = anchor.Id }, response);
         }
 
         [HttpDelete("{id}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteUwbAnchor(int id)
         {
-            var uwbAnchor = await _context.UwbAnchors.FindAsync(id);
-            if (uwbAnchor == null)
+            var anchor = await _context.UwbAnchors.FindAsync(id);
+            if (anchor == null)
             {
-                return NotFound();
+                return NotFound(new ErrorResponse
+                {
+                    Error = "NOT_FOUND",
+                    Message = $"UWB anchor with ID {id} not found",
+                    TraceId = HttpContext.TraceIdentifier
+                });
             }
 
-            _context.UwbAnchors.Remove(uwbAnchor);
+            _context.UwbAnchors.Remove(anchor);
             await _context.SaveChangesAsync();
 
             return NoContent();
-        }
-
-        private bool UwbAnchorExists(int id)
-        {
-            return _context.UwbAnchors.Any(e => e.Id == id);
         }
     }
 }
