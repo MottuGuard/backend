@@ -2,7 +2,13 @@
   "permissions": {
     "allow": [
       "Bash(dotnet build:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(dotnet restore:*)",
+      "Bash(docker compose:*)",
+      "Bash(dotnet run:*)",
+      "Bash(timeout:*)",
+      "Bash(curl:*)",
+      "Bash(python -m json.tool:*)"
     ],
     "deny": [],
     "ask": []

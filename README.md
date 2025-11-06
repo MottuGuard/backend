@@ -643,6 +643,11 @@ cd backend
 
 ### Principais Endpoints
 
+**Health Checks:**
+- `GET /health/live` - Liveness probe (verifica se app está rodando)
+- `GET /health/ready` - Readiness probe (verifica dependências)
+- `GET /health` - Health check completo com detalhes
+
 **Autenticação:**
 - `POST /api/Auth/register` - Registrar novo usuário
 - `POST /api/Auth/login` - Login (retorna JWT token)
@@ -674,6 +679,330 @@ cd backend
 - `ReceiveStatusUpdate` - Status das tags
 
 **Documentação Completa:** Acesse `/swagger` quando executar o backend em modo Development.
+
+---
+
+## Health Checks
+
+O MottuGuard implementa endpoints de health check seguindo as melhores práticas para ambientes containerizados e orquestrados (Kubernetes, Azure Container Instances).
+
+### Endpoints Disponíveis
+
+#### 1. `/health/live` - Liveness Probe
+
+**Propósito:** Verificar se a aplicação está viva e rodando. Usado por orquestradores de containers para decidir se devem reiniciar o container.
+
+**Características:**
+- ✅ Retorna sempre `200 OK` se a aplicação estiver respondendo
+- ✅ Não verifica dependências externas (banco, MQTT)
+- ✅ Tempo de resposta: < 5ms
+- ✅ Acesso público (sem autenticação)
+
+**Exemplo de resposta:**
+```json
+{
+  "status": "Healthy",
+  "totalDuration": "00:00:00.0018596",
+  "entries": {}
+}
+```
+
+**Teste:**
+```bash
+curl http://localhost:8080/health/live
+# HTTP 200 OK
+```
+
+#### 2. `/health/ready` - Readiness Probe
+
+**Propósito:** Verificar se a aplicação está pronta para receber tráfego. Usado por load balancers para decisões de roteamento.
+
+**Verificações realizadas:**
+- ✅ **Conexão PostgreSQL** - Verifica conectividade com banco de dados
+- ✅ **Conexão MQTT** - Verifica se MqttConsumerService está conectado ao broker
+
+**Características:**
+- ✅ Retorna `200 OK` quando todas as dependências estão saudáveis
+- ✅ Retorna `503 Service Unavailable` quando alguma dependência falha
+- ✅ Tempo de resposta: < 30ms
+- ✅ Acesso público (sem autenticação)
+
+**Exemplo de resposta (saudável):**
+```json
+{
+  "status": "Healthy",
+  "totalDuration": "00:00:00.0234567",
+  "entries": {
+    "database": {
+      "status": "Healthy",
+      "description": "PostgreSQL connection is healthy",
+      "duration": "00:00:00.0123456",
+      "tags": ["db", "sql", "postgresql", "ready"]
+    },
+    "mqtt": {
+      "status": "Healthy",
+      "description": "MQTT broker is connected and operational",
+      "duration": "00:00:00.0098765",
+      "tags": ["mqtt", "messaging", "ready"]
+    }
+  }
+}
+```
+
+**Exemplo de resposta (com problemas):**
+```json
+{
+  "status": "Unhealthy",
+  "totalDuration": "00:00:00.0269846",
+  "entries": {
+    "database": {
+      "status": "Unhealthy",
+      "description": "Connection timeout",
+      "exception": "Npgsql.NpgsqlException: Connection refused",
+      "duration": "00:00:00.0028240",
+      "tags": ["db", "sql", "postgresql", "ready"]
+    },
+    "mqtt": {
+      "status": "Degraded",
+      "description": "MQTT broker is not connected",
+      "duration": "00:00:00.0026283",
+      "tags": ["mqtt", "messaging", "ready"]
+    }
+  }
+}
+```
+
+**Teste:**
+```bash
+curl http://localhost:8080/health/ready
+# HTTP 200 OK (saudável) ou HTTP 503 Service Unavailable (não saudável)
+
+# Com detalhes formatados
+curl -s http://localhost:8080/health/ready | python -m json.tool
+```
+
+#### 3. `/health` - Full Health Check
+
+**Propósito:** Verificação completa de saúde com todas as dependências e detalhes diagnósticos.
+
+**Características:**
+- ✅ Inclui todas as verificações do `/health/ready`
+- ✅ Formato JSON detalhado com métricas de tempo
+- ✅ Útil para debugging e monitoramento
+- ✅ Acesso público (sem autenticação)
+
+**Teste:**
+```bash
+curl http://localhost:8080/health
+```
+
+### Casos de Uso
+
+#### 1. Kubernetes Liveness & Readiness Probes
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mottuguard-backend
+spec:
+  template:
+    spec:
+      containers:
+      - name: api
+        image: mottuguard/backend:latest
+        ports:
+        - containerPort: 8080
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 8080
+          initialDelaySeconds: 15
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 2
+```
+
+**Comportamento:**
+- **Liveness:** Se falhar 3 vezes consecutivas, Kubernetes reinicia o pod
+- **Readiness:** Se falhar 2 vezes, Kubernetes para de rotear tráfego para o pod
+
+#### 2. Azure Container Instances
+
+```bash
+az container create \
+  --resource-group mottu-rg \
+  --name mottu-api \
+  --image mottuguard.azurecr.io/backend:latest \
+  --ports 8080 \
+  --dns-name-label mottu-api \
+  --environment-variables \
+    ConnectionStrings__DefaultConnection="Host=..." \
+    Jwt__Key="..." \
+  --liveness-probe-http-get-path /health/live \
+  --liveness-probe-period-seconds 30 \
+  --liveness-probe-failure-threshold 3 \
+  --readiness-probe-http-get-path /health/ready \
+  --readiness-probe-period-seconds 10 \
+  --readiness-probe-failure-threshold 2
+```
+
+#### 3. Monitoramento e Alertas
+
+**Prometheus / Grafana:**
+```yaml
+# prometheus.yml
+scrape_configs:
+  - job_name: 'mottuguard-health'
+    metrics_path: '/health'
+    static_configs:
+      - targets: ['localhost:8080']
+```
+
+**Script de monitoramento simples:**
+```bash
+#!/bin/bash
+# monitor.sh - Verifica saúde da API a cada 30 segundos
+
+while true; do
+  STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/health/ready)
+
+  if [ "$STATUS" -eq 200 ]; then
+    echo "$(date): API healthy"
+  else
+    echo "$(date): API unhealthy - Status: $STATUS"
+    # Enviar alerta (email, Slack, PagerDuty, etc.)
+  fi
+
+  sleep 30
+done
+```
+
+#### 4. Load Balancer Health Check
+
+**NGINX:**
+```nginx
+upstream mottuguard_backend {
+    server backend1:8080;
+    server backend2:8080;
+
+    # Health check
+    check interval=3000 rise=2 fall=3 timeout=1000 type=http;
+    check_http_send "GET /health/ready HTTP/1.0\r\n\r\n";
+    check_http_expect_alive http_2xx;
+}
+```
+
+**AWS Application Load Balancer:**
+- Health Check Path: `/health/ready`
+- Health Check Interval: 30 seconds
+- Healthy Threshold: 2
+- Unhealthy Threshold: 3
+- Timeout: 5 seconds
+
+### Status de Saúde
+
+O sistema retorna três possíveis status:
+
+| Status | HTTP Code | Descrição |
+|--------|-----------|-----------|
+| **Healthy** | 200 | Todos os componentes funcionando normalmente |
+| **Degraded** | 200 | Alguns componentes com problemas não-críticos (ex: MQTT desconectado, mas API funcional) |
+| **Unhealthy** | 503 | Componentes críticos falhando (ex: banco de dados inacessível) |
+
+### Componentes Verificados
+
+#### Database (PostgreSQL)
+- **Critério:** Conexão TCP estabelecida e query simples executada
+- **Falha típica:** Connection timeout, credenciais inválidas, servidor offline
+- **Impacto:** Se falhar, API não pode persistir/ler dados
+- **Severidade:** **Unhealthy** (crítico)
+
+#### MQTT Broker
+- **Critério:** MqttConsumerService.IsConnected == true
+- **Falha típica:** Broker offline, configuração incorreta, problemas de rede
+- **Impacto:** Se falhar, não recebe telemetria IoT em tempo real (API ainda funciona)
+- **Severidade:** **Degraded** (não-crítico)
+
+### Implementação Técnica
+
+O sistema utiliza as seguintes bibliotecas .NET:
+
+```xml
+<PackageReference Include="AspNetCore.HealthChecks.Npgsql" Version="9.0.0" />
+<PackageReference Include="AspNetCore.HealthChecks.UI.Client" Version="9.0.0" />
+```
+
+**Código relevante:**
+- **Health Check customizado:** `backend/HealthChecks/MqttHealthCheck.cs`
+- **Configuração:** `backend/Program.cs` (linhas 100-110, 196-212)
+- **Exposição do status MQTT:** `backend/Services/MqttConsumerService.cs` (linha 25)
+
+### Troubleshooting
+
+**Problema:** `/health/ready` retorna 503 com erro de database
+
+**Solução:**
+```bash
+# Verificar se PostgreSQL está rodando
+docker ps | grep postgres
+
+# Verificar connection string
+echo $ConnectionStrings__DefaultConnection
+
+# Testar conexão manualmente
+psql -h localhost -U postgres -d mottu
+```
+
+**Problema:** MQTT sempre retorna "Degraded"
+
+**Solução:**
+```bash
+# Verificar se Mosquitto está rodando
+docker ps | grep mosquitto
+
+# Testar conexão MQTT
+mosquitto_sub -h localhost -p 1883 -t mottu/#
+
+# Verificar configuração no appsettings.json
+cat appsettings.json | grep Mqtt
+```
+
+**Problema:** Health check muito lento (> 5 segundos)
+
+**Solução:**
+- Verificar latência de rede para banco de dados
+- Aumentar timeout dos health checks
+- Verificar se há queries lentas no database health check
+
+### Melhores Práticas
+
+1. **Liveness vs Readiness:**
+   - Use `/health/live` para restart decisions (deve ser simples e rápido)
+   - Use `/health/ready` para routing decisions (pode verificar dependências)
+
+2. **Timeouts:**
+   - Configure timeouts adequados nos health checks (2-5 segundos)
+   - Liveness: timeout maior, failure threshold maior (evita restarts desnecessários)
+   - Readiness: timeout menor, failure threshold menor (remove rápido do pool)
+
+3. **Monitoramento:**
+   - Configure alertas para falhas consecutivas de health check
+   - Monitore latência dos health checks (aumentos podem indicar problemas)
+   - Log falhas de health check para análise post-mortem
+
+4. **Desenvolvimento Local:**
+   - Health checks podem retornar "Degraded" durante desenvolvimento (MQTT desligado)
+   - Isso é esperado e não impede uso da API
+   - Para testes completos, use `docker compose up -d` para subir todas as dependências
 
 ---
 

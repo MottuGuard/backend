@@ -19,6 +19,8 @@ namespace backend.Services
         private IMqttClient? _mqttClient;
         private readonly Dictionary<string, DateTime> _lastSeen = new();
 
+        public bool IsConnected => _mqttClient?.IsConnected ?? false;
+
         public MqttConsumerService(
             IServiceScopeFactory scopeFactory,
             IHubContext<MottuHub> hubContext,

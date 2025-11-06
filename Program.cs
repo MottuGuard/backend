@@ -4,11 +4,14 @@ using backend.Models.ApiResponses;
 using backend.Services;
 using backend.Hubs;
 using backend.Middleware;
+using backend.HealthChecks;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using HealthChecks.UI.Client;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -89,7 +92,20 @@ builder.Services.AddAuthentication(opt =>
 
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
-builder.Services.AddHostedService<MqttConsumerService>();
+
+builder.Services.AddSingleton<MqttConsumerService>();
+builder.Services.AddHostedService(provider => provider.GetRequiredService<MqttConsumerService>());
+
+builder.Services.AddHealthChecks()
+    .AddNpgSql(
+        connectionString: builder.Configuration.GetConnectionString("DefaultConnection")!,
+        name: "database",
+        failureStatus: HealthStatus.Unhealthy,
+        tags: new[] { "db", "sql", "postgresql", "ready" })
+    .AddCheck<MqttHealthCheck>(
+        name: "mqtt",
+        failureStatus: HealthStatus.Degraded,
+        tags: new[] { "mqtt", "messaging", "ready" });
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
@@ -174,6 +190,23 @@ app.UseAuthorization();
 
 app.MapHub<MottuHub>("/mottuHub");
 app.MapControllers();
+
+app.MapHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    Predicate = _ => false,
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+});
+
+app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready"),
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+});
+
+app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+});
 
 app.UseSwagger();
 app.UseSwaggerUI(options =>
