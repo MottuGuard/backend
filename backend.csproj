@@ -10,6 +10,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Asp.Versioning.Mvc" Version="8.1.0" />
+    <PackageReference Include="Asp.Versioning.Mvc.ApiExplorer" Version="8.1.0" />
     <PackageReference Include="AspNetCore.HealthChecks.Npgsql" Version="9.0.0" />
     <PackageReference Include="AspNetCore.HealthChecks.UI.Client" Version="9.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.4" />
@@ -25,6 +27,8 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.ML" Version="4.0.0" />
+    <PackageReference Include="Microsoft.ML.FastTree" Version="4.0.0" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="9.0.0" />
     <PackageReference Include="MQTTnet" Version="4.3.7.1207" />
     <PackageReference Include="MQTTnet.Extensions.ManagedClient" Version="4.3.7.1207" />

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Asp.Versioning;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,7 +14,8 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace backend.Controllers
 {
-    [Route("api/[controller]")]
+    [ApiVersion("1.0")]
+    [Route("api/v{version:apiVersion}/[controller]")]
     [ApiController]
     [Authorize]
     [Produces("application/json")]

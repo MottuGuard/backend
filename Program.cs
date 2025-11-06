@@ -5,6 +5,7 @@ using backend.Services;
 using backend.Hubs;
 using backend.Middleware;
 using backend.HealthChecks;
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -35,6 +36,18 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddSignalR();
+
+builder.Services.AddApiVersioning(options =>
+{
+    options.DefaultApiVersion = new ApiVersion(1, 0);
+    options.AssumeDefaultVersionWhenUnspecified = true;
+    options.ReportApiVersions = true;
+})
+.AddApiExplorer(options =>
+{
+    options.GroupNameFormat = "'v'VVV";
+    options.SubstituteApiVersionInUrl = true;
+});
 
 builder.Services.AddControllers()
     .ConfigureApiBehaviorOptions(options =>
@@ -92,6 +105,7 @@ builder.Services.AddAuthentication(opt =>
 
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IPositionPredictionService, PositionPredictionService>();
 
 builder.Services.AddSingleton<MqttConsumerService>();
 builder.Services.AddHostedService(provider => provider.GetRequiredService<MqttConsumerService>());

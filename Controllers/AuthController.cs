@@ -1,9 +1,11 @@
-﻿using backend.DTO;
+﻿using Asp.Versioning;
+using backend.DTO;
 using backend.Models.ApiResponses;
 using backend.Services;
 using Microsoft.AspNetCore.Mvc;
 
-[Route("api/[controller]")]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/[controller]")]
 [ApiController]
 [Produces("application/json")]
 public class AuthController : ControllerBase

@@ -8,7 +8,15 @@
       "Bash(dotnet run:*)",
       "Bash(timeout:*)",
       "Bash(curl:*)",
-      "Bash(python -m json.tool:*)"
+      "Bash(python -m json.tool:*)",
+      "Bash(dotnet add:*)",
+      "Bash(docker logs:*)",
+      "Bash(printf:*)",
+      "Bash(/tmp/login.json)",
+      "Bash(echo:*)",
+      "Bash(MLModels/README.md)",
+      "Bash(docker stop:*)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJ0ZXN0QHRlc3QuY29tIiwianRpIjoiYTA1ZWI1ZGQtYzdlNS00ZmM1LTkzZGMtNmFhM2NmNmY3YjE3IiwibmFtZSI6IlRlc3QgVXNlciIsIm5iZiI6MTc2MjQwNDIyNCwiZXhwIjoxNzYyNDA2MDI0LCJpYXQiOjE3NjI0MDQyMjR9.-obKRo4WX76JUKiOot151lhZiaKeeU77zZYLtFftpNo\")"
     ],
     "deny": [],
     "ask": []

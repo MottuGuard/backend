@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Asp.Versioning;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -10,7 +11,8 @@ using backend.Models;
 
 namespace backend.Controllers
 {
-    [Route("api/[controller]")]
+    [ApiVersion("1.0")]
+    [Route("api/v{version:apiVersion}/[controller]")]
     [ApiController]
     public class PositionRecordsController : ControllerBase
     {
