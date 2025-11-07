@@ -73,7 +73,7 @@ builder.Services.AddControllers()
             return new BadRequestObjectResult(errorResponse);
         };
     });
-builder.Services.AddDbContextPool<MottuContext>(opt =>
+builder.Services.AddDbContext<MottuContext>(opt =>
 {
     opt.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
        .EnableSensitiveDataLogging()
@@ -236,3 +236,6 @@ app.UseSwaggerUI(options =>
 });
 
 app.Run();
+
+// Make Program class accessible for integration tests
+public partial class Program { }

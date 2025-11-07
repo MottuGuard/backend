@@ -76,7 +76,7 @@ namespace backend.Services
                 });
             }
 
-            var userIdClaim = principal.FindFirst(ClaimTypes.NameIdentifier);
+            var userIdClaim = principal.FindFirst(JwtRegisteredClaimNames.Sub);
             if (userIdClaim == null)
             {
                 return new UnauthorizedObjectResult(new ErrorResponse

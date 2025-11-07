@@ -10,6 +10,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="backend.Tests/**" />
+    <Compile Remove="backend.IntegrationTests/**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Asp.Versioning.Mvc" Version="8.1.0" />
     <PackageReference Include="Asp.Versioning.Mvc.ApiExplorer" Version="8.1.0" />
     <PackageReference Include="AspNetCore.HealthChecks.Npgsql" Version="9.0.0" />

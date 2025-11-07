@@ -48,6 +48,9 @@ namespace backend.Services
                 SigningCredentials = credentails
             };
             var tokenHandler = new JwtSecurityTokenHandler();
+            // Disable claim type mapping to preserve original JWT claim names
+            tokenHandler.InboundClaimTypeMap.Clear();
+
             var token = tokenHandler.CreateToken(tokenDescriptor);
             var tokenString = tokenHandler.WriteToken(token);
             return tokenString;
@@ -55,6 +58,9 @@ namespace backend.Services
         public ClaimsPrincipal GetPrincipalFromToken(string token)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
+            // Disable claim type mapping to preserve original JWT claim names
+            tokenHandler.InboundClaimTypeMap.Clear();
+
             var tokenValidationParameters = new TokenValidationParameters
             {
                 ValidateIssuer = false,
