@@ -9,7 +9,6 @@ public class UpdateMotoDto
     public string? Chassi { get; set; }
 
     [StringLength(20, ErrorMessage = "Placa must not exceed 20 characters")]
-    [RegularExpression(@"^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$", ErrorMessage = "Placa must follow Brazilian format (e.g., ABC1D23)")]
     public string? Placa { get; set; }
 
     [EnumDataType(typeof(ModeloMoto), ErrorMessage = "Invalid modelo value")]
