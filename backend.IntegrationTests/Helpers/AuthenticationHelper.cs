@@ -6,16 +6,10 @@ using System.Text;
 
 namespace backend.IntegrationTests.Helpers;
 
-/// <summary>
-/// Helper class for generating JWT tokens for integration tests
-/// </summary>
 public static class AuthenticationHelper
 {
     private const string TestJwtKey = "test-jwt-key-for-testing-purposes-must-be-at-least-32-characters-long";
 
-    /// <summary>
-    /// Generates a JWT token for a test user
-    /// </summary>
     public static string GenerateJwtToken(ApplicationUser user, string[]? roles = null)
     {
         var claims = new List<Claim>
@@ -46,9 +40,6 @@ public static class AuthenticationHelper
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    /// <summary>
-    /// Generates a JWT token for the default test user
-    /// </summary>
     public static string GenerateJwtToken()
     {
         var user = new ApplicationUser
@@ -61,9 +52,6 @@ public static class AuthenticationHelper
         return GenerateJwtToken(user, new[] { "User" });
     }
 
-    /// <summary>
-    /// Generates a JWT token for an admin user
-    /// </summary>
     public static string GenerateAdminJwtToken()
     {
         var user = new ApplicationUser

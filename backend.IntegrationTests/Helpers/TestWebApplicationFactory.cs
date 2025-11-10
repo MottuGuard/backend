@@ -12,10 +12,6 @@ using Microsoft.Extensions.Hosting;
 
 namespace backend.IntegrationTests.Helpers;
 
-/// <summary>
-/// Custom WebApplicationFactory for integration tests
-/// Configures in-memory database and test services
-/// </summary>
 public class TestWebApplicationFactory : WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -24,21 +20,17 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
 
         builder.ConfigureTestServices(services =>
         {
-            // Remove PostgreSQL DbContext
             services.RemoveAll<DbContextOptions<MottuContext>>();
             services.RemoveAll<MottuContext>();
 
-            // Add InMemory DbContext
             services.AddDbContext<MottuContext>(options =>
             {
                 options.UseInMemoryDatabase("IntegrationTestDatabase");
             });
 
-            // Remove MQTT service
             services.RemoveAll(typeof(IHostedService));
-            services.AddHostedService<MqttConsumerService>(provider => null!); // Dummy registration
+            services.AddHostedService<MqttConsumerService>(provider => null!);
 
-            // Ensure database is seeded
             var sp = services.BuildServiceProvider();
             using (var scope = sp.CreateScope())
             {
@@ -64,14 +56,12 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
         UserManager<ApplicationUser> userManager,
         RoleManager<IdentityRole<int>> roleManager)
     {
-        // Seed roles
         if (!await roleManager.RoleExistsAsync("Admin"))
             await roleManager.CreateAsync(new IdentityRole<int>("Admin"));
 
         if (!await roleManager.RoleExistsAsync("User"))
             await roleManager.CreateAsync(new IdentityRole<int>("User"));
 
-        // Seed test user
         if (await userManager.FindByEmailAsync("testuser@test.com") == null)
         {
             var testUser = new ApplicationUser
@@ -86,7 +76,6 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
             await userManager.AddToRoleAsync(testUser, "User");
         }
 
-        // Seed UWB anchors
         if (!context.UwbAnchors.Any())
         {
             context.UwbAnchors.AddRange(

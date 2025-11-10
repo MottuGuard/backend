@@ -27,18 +27,15 @@ public class AuthControllerIntegrationTests : IClassFixture<TestWebApplicationFa
     [Fact]
     public async Task Register_WithValidData_ReturnsCreated()
     {
-        // Arrange
         var registerDto = new RegisterDTO
         {
-            Email = $"newuser{Guid.NewGuid():N}@test.com", // Unique email
+            Email = $"newuser{Guid.NewGuid():N}@test.com",
             Password = "NewUser@123",
             Name = "New Test User"
         };
 
-        // Act
         var response = await _client.PostAsJsonAsync("/api/v1/Auth/register", registerDto);
 
-        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
 
         var content = await response.Content.ReadAsStringAsync();
@@ -53,17 +50,14 @@ public class AuthControllerIntegrationTests : IClassFixture<TestWebApplicationFa
     [Fact]
     public async Task Login_WithValidCredentials_ReturnsTokens()
     {
-        // Arrange
         var loginDto = new AuthDTO
         {
-            Email = "testuser@test.com", // Seeded user in TestWebApplicationFactory
+            Email = "testuser@test.com",
             Password = "Test@123"
         };
 
-        // Act
         var response = await _client.PostAsJsonAsync("/api/v1/Auth/login", loginDto);
 
-        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var content = await response.Content.ReadAsStringAsync();
@@ -81,17 +75,14 @@ public class AuthControllerIntegrationTests : IClassFixture<TestWebApplicationFa
     [Fact]
     public async Task Login_WithInvalidCredentials_ReturnsUnauthorized()
     {
-        // Arrange
         var loginDto = new AuthDTO
         {
             Email = "testuser@test.com",
             Password = "WrongPassword@123"
         };
 
-        // Act
         var response = await _client.PostAsJsonAsync("/api/v1/Auth/login", loginDto);
 
-        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
 
         var content = await response.Content.ReadAsStringAsync();

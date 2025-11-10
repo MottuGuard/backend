@@ -2,9 +2,6 @@ using backend.Models;
 
 namespace backend.Tests.Helpers;
 
-/// <summary>
-/// Fluent builder for creating test data objects
-/// </summary>
 public class TestDataBuilder
 {
     public static MotoBuilder Moto() => new MotoBuilder();

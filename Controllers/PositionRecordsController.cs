@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using backend.Data;
 using backend.Models;
+using backend.DTOs.PositionRecord;
 
 namespace backend.Controllers
 {
@@ -24,14 +25,16 @@ namespace backend.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<PositionRecord>>> GetRecords(
+        public async Task<ActionResult<IEnumerable<PositionRecordResponseDto>>> GetRecords(
             [FromQuery] int? motoId,
             [FromQuery] DateTime? from,
             [FromQuery] DateTime? to,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 50)
         {
-            var query = _context.PositionRecords.AsQueryable();
+            var query = _context.PositionRecords
+                .Include(r => r.Moto)
+                .AsQueryable();
 
             if (motoId.HasValue)
                 query = query.Where(r => r.MotoId == motoId.Value);
@@ -46,13 +49,29 @@ namespace backend.Controllers
                 .Take(pageSize)
                 .ToListAsync();
 
-            return Ok(list);
+            var response = list.Select(r => new PositionRecordResponseDto
+            {
+                Id = r.Id,
+                MotoId = r.MotoId,
+                Timestamp = r.Timestamp,
+                X = r.X,
+                Y = r.Y,
+                Moto = r.Moto != null ? new PositionRecordResponseDto.MotoInfo
+                {
+                    Id = r.Moto.Id,
+                    Placa = r.Moto.Placa ?? string.Empty,
+                    Modelo = r.Moto.Modelo.ToString()
+                } : null
+            });
+
+            return Ok(response);
         }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<PositionRecord>> GetPositionRecord(int id)
         {
-            var positionRecord = await _context.PositionRecords.FindAsync(id);
+            var positionRecord = await _context.PositionRecords
+                .FirstOrDefaultAsync(r => r.Id == id);
 
             if (positionRecord == null)
             {

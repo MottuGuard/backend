@@ -28,7 +28,23 @@ builder.Services.AddCors(options =>
 
     options.AddPolicy("SignalRPolicy", policy =>
     {
-        policy.WithOrigins("http://localhost:3000", "http://localhost:8080", "http://localhost:5173")
+        var allowedOrigins = new List<string>
+        {
+            "http://localhost:3000",
+            "http://localhost:8080",
+            "http://localhost:5173",
+            "http://127.0.0.1:3000",
+            "http://127.0.0.1:8080",
+            "http://127.0.0.1:5173"
+        };
+
+        var additionalOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
+        if (additionalOrigins != null)
+        {
+            allowedOrigins.AddRange(additionalOrigins);
+        }
+
+        policy.WithOrigins(allowedOrigins.ToArray())
               .AllowAnyMethod()
               .AllowAnyHeader()
               .AllowCredentials();
@@ -194,9 +210,6 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-
-app.UseHttpsRedirection();
-
 app.UseCors("SignalRPolicy");
 
 app.UseAuthentication();
@@ -237,5 +250,4 @@ app.UseSwaggerUI(options =>
 
 app.Run();
 
-// Make Program class accessible for integration tests
 public partial class Program { }

@@ -65,14 +65,11 @@ public class MotosControllerIntegrationTests : IClassFixture<TestWebApplicationF
     [Fact]
     public async Task GetMotos_WithValidAuth_ReturnsPagedList()
     {
-        // Arrange
         var token = await GetAuthTokenAsync();
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-        // Act
         var response = await _client.GetAsync("/api/v1/Motos?page=1&pageSize=10");
 
-        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var content = await response.Content.ReadAsStringAsync();
@@ -89,7 +86,6 @@ public class MotosControllerIntegrationTests : IClassFixture<TestWebApplicationF
     [Fact]
     public async Task CreateMoto_WithValidData_ReturnsCreated()
     {
-        // Arrange
         var token = await GetAuthTokenAsync();
         var uniquePlaca = $"ABC{Random.Shared.Next(1, 9)}D{Random.Shared.Next(10, 99)}";
         var uniqueChassi = $"CHASSI-{Guid.NewGuid():N}";
@@ -104,10 +100,8 @@ public class MotosControllerIntegrationTests : IClassFixture<TestWebApplicationF
 
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-        // Act
         var response = await _client.PostAsJsonAsync("/api/v1/Motos", createDto);
 
-        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
 
         var content = await response.Content.ReadAsStringAsync();
@@ -124,14 +118,9 @@ public class MotosControllerIntegrationTests : IClassFixture<TestWebApplicationF
     [Fact]
     public async Task CreateMoto_WithDuplicatePlaca_ReturnsConflict()
     {
-        // Arrange
         var token = await GetAuthTokenAsync();
         var placa = $"ABC{Random.Shared.Next(1, 9)}D{Random.Shared.Next(10, 99)}";
-
-        // Create first moto
         await CreateMotoAsync(token, placa, $"CHASSI-{Guid.NewGuid():N}");
-
-        // Attempt to create second moto with same placa
         var duplicateDto = new CreateMotoDto
         {
             Chassi = $"CHASSI-{Guid.NewGuid():N}",
@@ -142,10 +131,8 @@ public class MotosControllerIntegrationTests : IClassFixture<TestWebApplicationF
 
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-        // Act
         var response = await _client.PostAsJsonAsync("/api/v1/Motos", duplicateDto);
 
-        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
 
         var content = await response.Content.ReadAsStringAsync();
@@ -159,7 +146,6 @@ public class MotosControllerIntegrationTests : IClassFixture<TestWebApplicationF
     [Fact]
     public async Task GetMoto_ById_ReturnsDetail()
     {
-        // Arrange
         var token = await GetAuthTokenAsync();
         var placa = $"ABC{Random.Shared.Next(1, 9)}D{Random.Shared.Next(10, 99)}";
         var chassi = $"CHASSI-{Guid.NewGuid():N}";
@@ -168,10 +154,8 @@ public class MotosControllerIntegrationTests : IClassFixture<TestWebApplicationF
 
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-        // Act
         var response = await _client.GetAsync($"/api/v1/Motos/{createdMoto.Id}");
 
-        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var content = await response.Content.ReadAsStringAsync();
@@ -188,14 +172,10 @@ public class MotosControllerIntegrationTests : IClassFixture<TestWebApplicationF
     [Fact]
     public async Task GetMotos_WithoutAuth_ReturnsUnauthorized()
     {
-        // Arrange
-        // Ensure no Authorization header is set
         _client.DefaultRequestHeaders.Authorization = null;
 
-        // Act
         var response = await _client.GetAsync("/api/v1/Motos");
 
-        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 }

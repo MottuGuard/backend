@@ -40,7 +40,6 @@ public class AuthServiceTests
     [Fact]
     public async Task Authenticate_WithValidCredentials_ShouldReturnOkWithTokens()
     {
-        // Arrange
         var authDTO = new AuthDTO { Email = "test@test.com", Password = "Test@123" };
         var user = TestDataBuilder.ApplicationUser()
             .WithId(1)
@@ -57,10 +56,8 @@ public class AuthServiceTests
         _mockTokenService.Setup(x => x.GenerateRefreshToken())
             .Returns("refresh-token");
 
-        // Act
         var result = await _authService.Authenticate(authDTO);
 
-        // Assert
         result.Should().BeOfType<OkObjectResult>();
         var okResult = result as OkObjectResult;
         okResult.Value.Should().NotBeNull();
@@ -69,16 +66,13 @@ public class AuthServiceTests
     [Fact]
     public async Task Authenticate_WithInvalidEmail_ShouldReturnUnauthorized()
     {
-        // Arrange
         var authDTO = new AuthDTO { Email = "nonexistent@test.com", Password = "Test@123" };
 
         _mockUserManager.Setup(x => x.FindByEmailAsync(authDTO.Email))
             .ReturnsAsync((ApplicationUser)null);
 
-        // Act
         var result = await _authService.Authenticate(authDTO);
 
-        // Assert
         result.Should().BeOfType<UnauthorizedObjectResult>();
         var unauthorizedResult = result as UnauthorizedObjectResult;
         var errorResponse = unauthorizedResult.Value as ErrorResponse;
@@ -89,7 +83,6 @@ public class AuthServiceTests
     [Fact]
     public async Task Authenticate_WithInvalidPassword_ShouldReturnUnauthorized()
     {
-        // Arrange
         var authDTO = new AuthDTO { Email = "test@test.com", Password = "WrongPassword" };
         var user = TestDataBuilder.ApplicationUser()
             .WithId(2)
@@ -101,10 +94,8 @@ public class AuthServiceTests
         _mockUserManager.Setup(x => x.CheckPasswordAsync(user, authDTO.Password))
             .ReturnsAsync(false);
 
-        // Act
         var result = await _authService.Authenticate(authDTO);
 
-        // Assert
         result.Should().BeOfType<UnauthorizedObjectResult>();
         var unauthorizedResult = result as UnauthorizedObjectResult;
         var errorResponse = unauthorizedResult.Value as ErrorResponse;
@@ -114,7 +105,6 @@ public class AuthServiceTests
     [Fact]
     public async Task Authenticate_ShouldGenerateAndStoreRefreshToken()
     {
-        // Arrange
         var authDTO = new AuthDTO { Email = "test@test.com", Password = "Test@123" };
         var user = TestDataBuilder.ApplicationUser()
             .WithEmail(authDTO.Email)
@@ -129,10 +119,8 @@ public class AuthServiceTests
         _mockTokenService.Setup(x => x.GenerateRefreshToken())
             .Returns("new-refresh-token");
 
-        // Act
         var result = await _authService.Authenticate(authDTO);
 
-        // Assert
         user.RefreshToken.Should().Be("new-refresh-token");
         user.RefreshTokenExpiryTime.Should().BeCloseTo(DateTime.UtcNow.AddDays(1), TimeSpan.FromSeconds(5));
     }
@@ -144,7 +132,6 @@ public class AuthServiceTests
     [Fact]
     public async Task Register_WithValidData_ShouldCreateUser()
     {
-        // Arrange
         var registerDTO = new RegisterDTO
         {
             Email = "newuser@test.com",
@@ -157,10 +144,8 @@ public class AuthServiceTests
         _mockUserManager.Setup(x => x.AddToRoleAsync(It.IsAny<ApplicationUser>(), "User"))
             .ReturnsAsync(IdentityResult.Success);
 
-        // Act
         var result = await _authService.Register(registerDTO);
 
-        // Assert
         result.Should().BeOfType<CreatedResult>();
         var createdResult = result as CreatedResult;
         createdResult.StatusCode.Should().Be(201);
@@ -169,7 +154,6 @@ public class AuthServiceTests
     [Fact]
     public async Task Register_ShouldSetUsernameToEmail()
     {
-        // Arrange
         var registerDTO = new RegisterDTO
         {
             Email = "test@example.com",
@@ -184,10 +168,8 @@ public class AuthServiceTests
         _mockUserManager.Setup(x => x.AddToRoleAsync(It.IsAny<ApplicationUser>(), "User"))
             .ReturnsAsync(IdentityResult.Success);
 
-        // Act
         await _authService.Register(registerDTO);
 
-        // Assert
         capturedUser.Should().NotBeNull();
         capturedUser.UserName.Should().Be(registerDTO.Email);
         capturedUser.Email.Should().Be(registerDTO.Email);
@@ -197,7 +179,6 @@ public class AuthServiceTests
     [Fact]
     public async Task Register_WithDuplicateEmail_ShouldReturnBadRequest()
     {
-        // Arrange
         var registerDTO = new RegisterDTO
         {
             Email = "existing@test.com",
@@ -213,10 +194,8 @@ public class AuthServiceTests
         _mockUserManager.Setup(x => x.CreateAsync(It.IsAny<ApplicationUser>(), registerDTO.Password))
             .ReturnsAsync(IdentityResult.Failed(identityErrors));
 
-        // Act
         var result = await _authService.Register(registerDTO);
 
-        // Assert
         result.Should().BeOfType<BadRequestObjectResult>();
         var badRequestResult = result as BadRequestObjectResult;
         var errorResponse = badRequestResult.Value as ErrorResponse;
@@ -227,7 +206,6 @@ public class AuthServiceTests
     [Fact]
     public async Task Register_ShouldAddUserToUserRole()
     {
-        // Arrange
         var registerDTO = new RegisterDTO
         {
             Email = "test@test.com",
@@ -240,10 +218,8 @@ public class AuthServiceTests
         _mockUserManager.Setup(x => x.AddToRoleAsync(It.IsAny<ApplicationUser>(), "User"))
             .ReturnsAsync(IdentityResult.Success);
 
-        // Act
         await _authService.Register(registerDTO);
 
-        // Assert
         _mockUserManager.Verify(x => x.AddToRoleAsync(It.IsAny<ApplicationUser>(), "User"), Times.Once);
     }
 
@@ -254,7 +230,6 @@ public class AuthServiceTests
     [Fact]
     public async Task Authenticate_WithValidRefreshToken_ShouldReturnNewTokens()
     {
-        // Arrange
         var refreshDTO = new RefreshDTO
         {
             Token = "valid-jwt-token",
@@ -285,10 +260,8 @@ public class AuthServiceTests
         _mockUserManager.Setup(x => x.UpdateAsync(user))
             .ReturnsAsync(IdentityResult.Success);
 
-        // Act
         var result = await _authService.Authenticate(refreshDTO);
 
-        // Assert
         result.Should().BeOfType<OkObjectResult>();
         var okResult = result as OkObjectResult;
         okResult.Value.Should().NotBeNull();
@@ -297,7 +270,6 @@ public class AuthServiceTests
     [Fact]
     public async Task Authenticate_WithInvalidToken_ShouldReturnUnauthorized()
     {
-        // Arrange
         var refreshDTO = new RefreshDTO
         {
             Token = "invalid-token",
@@ -307,10 +279,8 @@ public class AuthServiceTests
         _mockTokenService.Setup(x => x.GetPrincipalFromToken(refreshDTO.Token))
             .Throws(new Exception("Invalid token"));
 
-        // Act
         var result = await _authService.Authenticate(refreshDTO);
 
-        // Assert
         result.Should().BeOfType<UnauthorizedObjectResult>();
         var unauthorizedResult = result as UnauthorizedObjectResult;
         var errorResponse = unauthorizedResult.Value as ErrorResponse;
@@ -320,7 +290,6 @@ public class AuthServiceTests
     [Fact]
     public async Task Authenticate_WithExpiredRefreshToken_ShouldReturnUnauthorized()
     {
-        // Arrange
         var refreshDTO = new RefreshDTO
         {
             Token = "valid-jwt-token",
@@ -344,10 +313,8 @@ public class AuthServiceTests
         _mockUserManager.Setup(x => x.FindByIdAsync("10"))
             .ReturnsAsync(user);
 
-        // Act
         var result = await _authService.Authenticate(refreshDTO);
 
-        // Assert
         result.Should().BeOfType<UnauthorizedObjectResult>();
         var unauthorizedResult = result as UnauthorizedObjectResult;
         var errorResponse = unauthorizedResult.Value as ErrorResponse;
@@ -358,7 +325,6 @@ public class AuthServiceTests
     [Fact]
     public async Task Authenticate_WithMismatchedRefreshToken_ShouldReturnUnauthorized()
     {
-        // Arrange
         var refreshDTO = new RefreshDTO
         {
             Token = "valid-jwt-token",
@@ -382,10 +348,8 @@ public class AuthServiceTests
         _mockUserManager.Setup(x => x.FindByIdAsync("10"))
             .ReturnsAsync(user);
 
-        // Act
         var result = await _authService.Authenticate(refreshDTO);
 
-        // Assert
         result.Should().BeOfType<UnauthorizedObjectResult>();
         var unauthorizedResult = result as UnauthorizedObjectResult;
         var errorResponse = unauthorizedResult.Value as ErrorResponse;
@@ -395,7 +359,6 @@ public class AuthServiceTests
     [Fact]
     public async Task Authenticate_WithNonExistentUser_ShouldReturnNotFound()
     {
-        // Arrange
         var refreshDTO = new RefreshDTO
         {
             Token = "valid-jwt-token",
@@ -412,10 +375,8 @@ public class AuthServiceTests
         _mockUserManager.Setup(x => x.FindByIdAsync("nonexistent-user-id"))
             .ReturnsAsync((ApplicationUser)null);
 
-        // Act
         var result = await _authService.Authenticate(refreshDTO);
 
-        // Assert
         result.Should().BeOfType<NotFoundObjectResult>();
         var notFoundResult = result as NotFoundObjectResult;
         var errorResponse = notFoundResult.Value as ErrorResponse;
@@ -425,7 +386,6 @@ public class AuthServiceTests
     [Fact]
     public async Task Authenticate_RefreshFlow_ShouldUpdateUserWithNewRefreshToken()
     {
-        // Arrange
         var refreshDTO = new RefreshDTO
         {
             Token = "valid-jwt-token",
@@ -455,10 +415,8 @@ public class AuthServiceTests
         _mockUserManager.Setup(x => x.UpdateAsync(user))
             .ReturnsAsync(IdentityResult.Success);
 
-        // Act
         await _authService.Authenticate(refreshDTO);
 
-        // Assert
         user.RefreshToken.Should().Be("new-refresh-token");
         user.RefreshTokenExpiryTime.Should().BeCloseTo(DateTime.UtcNow.AddDays(1), TimeSpan.FromSeconds(5));
         _mockUserManager.Verify(x => x.UpdateAsync(user), Times.Once);

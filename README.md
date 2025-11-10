@@ -19,17 +19,10 @@ Sistema de gestão de frotas de motocicletas com rastreamento indoor utilizando 
 
 ### Equipe
 
-- **Gabriel Augusto Fernandes** - RM99711
-- **Jaqueline Martins dos Santos** - RM551744
-- **Matheus Oliveira da Silva** - RM99792
-- **Gilberto Ramos da Silva Neto** - RM551413
+- **Gustavo Paz Felipe Araujo** - 555277
+- **Nicolas Gabriel Santos Meira** - 554464
+- **João Pedro Cancian Corrêa** - 555341
 
-### Links
-
-- [Vídeo Demonstração](https://www.youtube.com/watch?v=dQw4w9WgXcQ)
-- [Protótipo Figma](https://www.figma.com/design/example)
-
----
 
 ## Arquitetura do Sistema
 
@@ -527,13 +520,15 @@ npm start
 # Escanear QR code com Expo Go ou:
 npm run android  # Android
 npm run ios      # iOS (apenas macOS)
+npm run web      # web
 ```
 
-**Configuração:** Edite `mobile/src/config/env.ts` com a URL do backend.
+**Configuração:** Edite `mobile/src/.env` com a URL do backend.
 
 #### 3. IoT Infrastructure
 
 ```bash
+git clone https://github.com/MottuGuard/iot.git
 cd iot
 docker compose up -d
 
@@ -545,7 +540,7 @@ py tag_sim.py tag02  # Terminal 2
 py tag_sim.py tag03  # Terminal 3
 
 # Dashboard: http://localhost:8081
-# MQTT: localhost:1883 (TCP) | ws://localhost:8080 (WebSocket)
+# MQTT: localhost:1883 (TCP) | ws://localhost:5050 (WebSocket)
 ```
 
 ### Teste Rápido da API
@@ -592,15 +587,6 @@ PG_DSN='dbname=mottu user=postgres password=postgres host=localhost port=5432'
 ```
 
 ---
-
-## Documentação dos Componentes
-
-Cada componente possui documentação detalhada em seu respectivo diretório:
-
-- **[Backend](./backend/README.md)** - API .NET, migrations, controllers, services
-- **[Mobile](./mobile/README.md)** - App React Native, estrutura de telas e services
-- **[IoT](./iot/README.md)** - Simuladores, dashboard, broker MQTT
-- **[Database](./database/README_MONGODB.md)** - Schemas Oracle e MongoDB
 
 ---
 
@@ -684,7 +670,6 @@ cd backend
 
 ## Health Checks
 
-O MottuGuard implementa endpoints de health check seguindo as melhores práticas para ambientes containerizados e orquestrados (Kubernetes, Azure Container Instances).
 
 ### Endpoints Disponíveis
 
@@ -772,15 +757,6 @@ curl http://localhost:8080/health/live
 }
 ```
 
-**Teste:**
-```bash
-curl http://localhost:8080/health/ready
-# HTTP 200 OK (saudável) ou HTTP 503 Service Unavailable (não saudável)
-
-# Com detalhes formatados
-curl -s http://localhost:8080/health/ready | python -m json.tool
-```
-
 #### 3. `/health` - Full Health Check
 
 **Propósito:** Verificação completa de saúde com todas as dependências e detalhes diagnósticos.
@@ -796,117 +772,6 @@ curl -s http://localhost:8080/health/ready | python -m json.tool
 curl http://localhost:8080/health
 ```
 
-### Casos de Uso
-
-#### 1. Kubernetes Liveness & Readiness Probes
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: mottuguard-backend
-spec:
-  template:
-    spec:
-      containers:
-      - name: api
-        image: mottuguard/backend:latest
-        ports:
-        - containerPort: 8080
-        livenessProbe:
-          httpGet:
-            path: /health/live
-            port: 8080
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 3
-        readinessProbe:
-          httpGet:
-            path: /health/ready
-            port: 8080
-          initialDelaySeconds: 15
-          periodSeconds: 5
-          timeoutSeconds: 3
-          failureThreshold: 2
-```
-
-**Comportamento:**
-- **Liveness:** Se falhar 3 vezes consecutivas, Kubernetes reinicia o pod
-- **Readiness:** Se falhar 2 vezes, Kubernetes para de rotear tráfego para o pod
-
-#### 2. Azure Container Instances
-
-```bash
-az container create \
-  --resource-group mottu-rg \
-  --name mottu-api \
-  --image mottuguard.azurecr.io/backend:latest \
-  --ports 8080 \
-  --dns-name-label mottu-api \
-  --environment-variables \
-    ConnectionStrings__DefaultConnection="Host=..." \
-    Jwt__Key="..." \
-  --liveness-probe-http-get-path /health/live \
-  --liveness-probe-period-seconds 30 \
-  --liveness-probe-failure-threshold 3 \
-  --readiness-probe-http-get-path /health/ready \
-  --readiness-probe-period-seconds 10 \
-  --readiness-probe-failure-threshold 2
-```
-
-#### 3. Monitoramento e Alertas
-
-**Prometheus / Grafana:**
-```yaml
-# prometheus.yml
-scrape_configs:
-  - job_name: 'mottuguard-health'
-    metrics_path: '/health'
-    static_configs:
-      - targets: ['localhost:8080']
-```
-
-**Script de monitoramento simples:**
-```bash
-#!/bin/bash
-# monitor.sh - Verifica saúde da API a cada 30 segundos
-
-while true; do
-  STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/health/ready)
-
-  if [ "$STATUS" -eq 200 ]; then
-    echo "$(date): API healthy"
-  else
-    echo "$(date): API unhealthy - Status: $STATUS"
-    # Enviar alerta (email, Slack, PagerDuty, etc.)
-  fi
-
-  sleep 30
-done
-```
-
-#### 4. Load Balancer Health Check
-
-**NGINX:**
-```nginx
-upstream mottuguard_backend {
-    server backend1:8080;
-    server backend2:8080;
-
-    # Health check
-    check interval=3000 rise=2 fall=3 timeout=1000 type=http;
-    check_http_send "GET /health/ready HTTP/1.0\r\n\r\n";
-    check_http_expect_alive http_2xx;
-}
-```
-
-**AWS Application Load Balancer:**
-- Health Check Path: `/health/ready`
-- Health Check Interval: 30 seconds
-- Healthy Threshold: 2
-- Unhealthy Threshold: 3
-- Timeout: 5 seconds
 
 ### Status de Saúde
 
@@ -932,19 +797,6 @@ O sistema retorna três possíveis status:
 - **Impacto:** Se falhar, não recebe telemetria IoT em tempo real (API ainda funciona)
 - **Severidade:** **Degraded** (não-crítico)
 
-### Implementação Técnica
-
-O sistema utiliza as seguintes bibliotecas .NET:
-
-```xml
-<PackageReference Include="AspNetCore.HealthChecks.Npgsql" Version="9.0.0" />
-<PackageReference Include="AspNetCore.HealthChecks.UI.Client" Version="9.0.0" />
-```
-
-**Código relevante:**
-- **Health Check customizado:** `backend/HealthChecks/MqttHealthCheck.cs`
-- **Configuração:** `backend/Program.cs` (linhas 100-110, 196-212)
-- **Exposição do status MQTT:** `backend/Services/MqttConsumerService.cs` (linha 25)
 
 ### Troubleshooting
 
@@ -966,13 +818,10 @@ psql -h localhost -U postgres -d mottu
 
 **Solução:**
 ```bash
-# Verificar se Mosquitto está rodando
 docker ps | grep mosquitto
 
-# Testar conexão MQTT
 mosquitto_sub -h localhost -p 1883 -t mottu/#
 
-# Verificar configuração no appsettings.json
 cat appsettings.json | grep Mqtt
 ```
 
@@ -1003,30 +852,6 @@ cat appsettings.json | grep Mqtt
    - Health checks podem retornar "Degraded" durante desenvolvimento (MQTT desligado)
    - Isso é esperado e não impede uso da API
    - Para testes completos, use `docker compose up -d` para subir todas as dependências
-
----
-
-## Contribuindo
-
-Este é um projeto acadêmico desenvolvido para a disciplina de **Engenharia de Software** da FIAP.
-
-### Workflow de Desenvolvimento
-
-1. Clone o repositório
-2. Crie uma branch para sua feature: `git checkout -b feature/nova-funcionalidade`
-3. Faça commit das alterações: `git commit -m 'Add nova funcionalidade'`
-4. Push para a branch: `git push origin feature/nova-funcionalidade`
-5. Abra um Pull Request
-
----
-
-## Licença
-
-Este projeto é parte de um trabalho acadêmico e está disponível para fins educacionais.
-
-**Curso:** Análise e Desenvolvimento de Sistemas - FIAP
-**Disciplina:** Engenharia de Software
-**Ano:** 2024/2025
 
 ---
 
